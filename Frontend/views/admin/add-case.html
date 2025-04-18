@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Add Case - Justice Njaka</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header><h1>Add New Case</h1></header>
+  <div class="container">
+    <form action="views/add-case" method="POST" enctype="multipart/form-data">
+      <input type="datetime-local" name="date" required>
+      <select name="category" required>
+        <option disabled selected>Select Category</option>
+        <!-- categories will be dynamically inserted -->
+      </select>
+      <textarea name="content" placeholder="Write the case details here..." rows="6" required></textarea>
+      <input type="file" name="image" accept="image/*">
+      <button type="submit">Post Case</button>
+    </form>
+  </div>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Admin Register - Justice Njaka</title>
+  <!-- <link rel="stylesheet" href="style.css"> -->
+</head>
+
+<body>
+  <header>
+    <h1>Justice Njaka - Admin Register</h1>
+  </header>
+  <div class="container">
+    <form id="registerForm">
+      <h2>Create Admin Account</h2>
+      <input type="text" id="username" name="username" placeholder="Enter Username" required>
+      <input type="password" id="password" name="password" placeholder="Create Password" required>
+      <button type="submit">Register</button>
+    </form>
+  </div>
+</body>
+<script>
+  const registerForm = document.getElementById("registerForm");
+  const username = document.getElementById("username");
+  const password = document.getElementById("password");
+
+  registerForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    console.log(username.value, password.value)
+
+    try {
+      const res = await fetch("/admin-register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ username: username.value, password: password.value })
+      });
+
+      const data = await res.json();
+      console.log(data.message);
+      alert(data.message);
+      window.location.replace("/login");
+    } catch (err) {
+      console.error("Registration failed:", err);
+    }
+
+  })
+</script>
+
+</html>
