@@ -55,8 +55,6 @@ app.get('/case-viewer', (req, res) => {
 });
 
 
-// app.get('/register', (req, res) => res.sendFile(__dirname + '/views/register.html'));
-// app.get('/login', (req, res) => res.sendFile(__dirname + '/views/login.html'));
 // app.get('/select-category', (req, res) => res.sendFile(__dirname + '/views/select-category.html'));
 // app.get('/add-case', async (req, res) => {
 //   const categories = await Category.find();
