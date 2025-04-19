@@ -79,14 +79,12 @@ app.post('/admin-register', async (req, res) => {
   const { username, password } = req.body;
   const hash = await bcrypt.hash(password, 10);
   await new Admin({ username, password: hash }).save();
-  console.log("Admin details saved")
   return res.status(200).json({ message: "Admin Details saved"})
 });
 
 app.post('/admin-login', async (req, res) => {
   const { username, password } = req.body;
   const admin = await Admin.findOne({ username });
-  console.log(admin)
   if (!admin || !(await bcrypt.compare(password, admin.password))) {
     return res.status(400).json({message: "Invalid Credentials"})
   }

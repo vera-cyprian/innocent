@@ -35,7 +35,6 @@
       });
 
       const data = await res.json();
-      console.log(data.message);
       if (data.message == "Invalid Credentials") {
         alert(data.message);
       } else {

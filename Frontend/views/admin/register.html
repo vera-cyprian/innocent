@@ -4,7 +4,6 @@
 <head>
   <title>Admin Register - Justice Njaka</title>
   <link rel="stylesheet" href="/css/admin.css">
-
 </head>
 
 <body>
@@ -39,7 +38,6 @@
       });
 
       const data = await res.json();
-      console.log(data.message);
       alert(data.message);
       window.location.replace("/login");
     } catch (err) {
