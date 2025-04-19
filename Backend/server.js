@@ -16,9 +16,9 @@ app.use(express.static(__dirname + '/../Frontend'));
 app.set('view engine', 'ejs');
 
 // Connect to MongoDB
-// mongoose.connect(process.env.DB_URL)
-//   .then(() => console.log('Connected to MongoDB'))
-//   .catch(err => console.error('MongoDB connection error:', err));
+mongoose.connect(process.env.DB_URL)
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 // Models
 const Admin = mongoose.model('Admin', new mongoose.Schema({
