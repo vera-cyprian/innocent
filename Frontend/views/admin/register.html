@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html>
 
 <head>
@@ -47,4 +47,64 @@
   })
 </script>
 
+</html> -->
+
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Register - Justice Njaka</title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+  <header>
+    <h1>Justice Njaka - Admin Register</h1>
+  </header>
+  <div class="container">
+    <form id="registerForm" novalidate>
+      <h2>Create Admin Account</h2>
+      <input type="text" id="username" name="username" placeholder="Enter Username" required>
+      <input type="email" id="email" name="email" placeholder="Enter Email" required>
+      <input type="password" id="password" name="password" placeholder="Create Password" required>
+      <input type="checkbox" id="terms" name="terms" required>
+      <label for="terms">I agree to the terms and conditions</label>
+      <button type="submit">Register</button>
+    </form>
+  </div>
+</body>
+<script>
+  const registerForm = document.getElementById("registerForm");
+  const username = document.getElementById("username");
+  const email = document.getElementById("email");
+  const password = document.getElementById("password");
+  const terms = document.getElementById("terms");
+
+  registerForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("/admin-register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username: username.value,
+          email: email.value,
+          password: password.value,
+          terms: terms.checked
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+        // Redirect to login page or another page as needed
+        window.location.replace("/login");
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      console.error("Registration failed:", err);
+    }
+  })
+</script>
 </html>

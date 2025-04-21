@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Verification</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="message"></h1>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = window.location.pathname.split('/').pop();
+
+    fetch(`/api/verify-email/${token}`)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('message').innerText = data.message;
+        if (data.message === 'Email verified successfully') {
+          document.getElementById('message').style.color = 'green';
+
+          window.location.replace("/login")
+        } else {
+          document.getElementById('message').style.color = 'red';
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById('message').innerText = 'An error occurred';
+        document.getElementById('message').style.color = 'red';
+      });
+  </script>
+</body>
+</html>

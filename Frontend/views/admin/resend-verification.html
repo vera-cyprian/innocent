@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resend Verification</title>
+</head>
+<body>
+  <h1 id="email"></h1>
+  <button id="resend-btn">Resend Verification Email</button>
+
+  <script>
+    fetch('/get-admin-email', {
+      credentials: 'include'
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('email').innerText = `Email: ${data.email}`;
+    })
+    .catch(err => console.error(err));
+
+    document.getElementById('resend-btn').addEventListener('click', () => {
+      fetch('/resend-verification', {
+        method: 'POST',
+        credentials: 'include'
+      })
+      .then(res => res.json())
+      .then(data => alert(data.message))
+      .catch(err => console.error(err));
+    });
+  </script>
+</body>
+</html>

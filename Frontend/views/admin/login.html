@@ -3,15 +3,13 @@
 <head>
   <title>Admin Login - Justice Njaka</title>
   <link rel="stylesheet" href="/css/admin.css">
-
 </head>
-
 <body>
   <header><h1>Justice Njaka - Admin Login</h1></header>
   <div class="container">
-    <form id="loginForm">
+    <form id="loginForm" novalidate>
       <h2>Admin Sign In</h2>
-      <input type="text" name="username" id="username" placeholder="Enter Username" required>
+      <input type="email" name="email" id="email" placeholder="Enter Email" required>
       <input type="password" name="password" id="password" placeholder="Enter Password" required>
       <button type="submit">Login</button>
     </form>
@@ -19,27 +17,32 @@
 </body>
 <script>
   const loginForm = document.getElementById("loginForm");
-  const username = document.getElementById("username");
+  const email = document.getElementById("email");
   const password = document.getElementById("password");
 
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-
     try {
       const res = await fetch("/admin-login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ username: username.value, password: password.value })
+        body: JSON.stringify({
+          email: email.value,
+          password: password.value
+        }),
+        credentials: 'include'
       });
-
       const data = await res.json();
-      if (data.message == "Invalid Credentials") {
+      if (res.status === 400 && data.message === "Email not verified") {
         alert(data.message);
-      } else {
+        window.location.href = "/resend-verification";
+      } else if (res.status === 200 && data.message === "Login Successful") {
         alert(data.message);
         window.location.href = "/case-viewer";
+      } else {
+        alert(data.message);
       }
     } catch (err) {
       console.error("Login failed:", err);
