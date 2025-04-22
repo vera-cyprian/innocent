@@ -24,15 +24,16 @@ mongoose
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-// Admin Authentication Middleware
-const authenticateAdmin = async (req, res, next) => {
+// Authentication Middleware
+const authenticate = async (req, res, next) => {
   const token = req.cookies.token;
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.admin = await Admin.findById(decoded.adminId);
+    req.user = await Admin.findById(decoded.adminId);
+    // console.log(req.user)
     next();
   } catch (error) {
-    res.status(401).json({ message: "Please authenticate" });
+    res.status(401).json({ message: "Unauthorized" });
   }
 };
 
@@ -57,6 +58,26 @@ const verifyTokenMiddleware = async (req, res, next) => {
   }
 };
 
+const checkPermission = (action) => {
+  return async (req, res, next) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Please authenticate" });
+      }
+      const permissions = {
+        admin: ["create", "view", "update", "delete", "search"],
+        user: ["view", "search"],
+      };
+      if (!permissions[req.user.role] || !permissions[req.user.role].includes(action)) {
+        return res.status(401).json({ message: "You don't have the permission to perform this operation" });
+      }
+      next();
+    } catch (error) {
+      res.status(500).json({ message: "Error checking permission" });
+    }
+  };
+};
+
 // Send verification email
 const transporter = nodemailer.createTransport({
   service: "Gmail",
@@ -70,7 +91,7 @@ const transporter = nodemailer.createTransport({
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../Frontend/views/admin/register.html"));
 });
-app.get("/admin-dashboard", authenticateAdmin, (req, res) => {
+app.get("/admin-dashboard", authenticate, (req, res) => {
   // Only authenticated admins can access this route
   res.sendFile(path.join(__dirname, "../Frontend/views/admin/register.html"));
 });
@@ -110,7 +131,7 @@ app.get("/reset-password/:token", (req, res) => {
     path.join(__dirname, "../Frontend/views/admin/reset-password.html")
   );
 });
-app.get("/case-viewer", authenticateAdmin, (req, res) => {
+app.get("/case-viewer", authenticate, (req, res) => {
   res.sendFile(
     path.join(__dirname, "../Frontend/views/admin/case-viewer.html")
   );
@@ -227,6 +248,7 @@ app.post("/admin-register", limiter, async (req, res) => {
     username,
     email,
     password: hash,
+    role: "admin",
     verified: false,
   });
 
@@ -284,12 +306,12 @@ app.post("/admin-login", limiter, async (req, res) => {
   const { email, password } = req.body;
   const admin = await Admin.findOne({ email });
   if (!admin) {
-    return res.status(400).json({ message: "Invalid Credentials" });
+    return res.status(400).json({ message: "Invalid Email or Password" });
   }
 
   const isValidPassword = await bcrypt.compare(password, admin.password);
   if (!isValidPassword) {
-    return res.status(400).json({ message: "Invalid Credentials" });
+    return res.status(400).json({ message: "Invalid Email or Password" });
   }
 
   if (!admin.verified) {
@@ -310,7 +332,7 @@ app.post("/admin-login", limiter, async (req, res) => {
     return res.status(400).json({ message: "Email not verified" });
   }
 
-  const token = jwt.sign({ adminId: admin._id }, process.env.JWT_SECRET, {
+  const token = jwt.sign({ adminId: admin._id, role: admin.role }, process.env.JWT_SECRET, {
     expiresIn: "1h",
   });
 
@@ -500,5 +522,54 @@ app.get("/admins", async (req, res) => {
     res.status(500).json({ message: "Error fetching admins" });
   }
 });
+
+// Create case (admin only)
+app.post("/cases", authenticate, checkPermission("create"), (req, res) => {
+  // Create case logic
+  return res.status(200).json({ message: "Add Cases" })
+});
+
+// View case (admin and user)
+app.get("/cases", authenticate, checkPermission("view"), (req, res) => {
+  // View case logic
+  return res.status(200).json({ message: "Get All Cases" })
+});
+
+// View case (admin and user)
+app.get("/cases/:id", authenticate, checkPermission("view"), (req, res) => {
+  // View case logic
+  return res.status(200).json({ message: "Get Cases by ID" })
+});
+
+// Update case (admin only)
+app.put("/cases/:id", authenticate, checkPermission("update"), (req, res) => {
+  // Update case logic
+  return res.status(200).json({ message: "Update Case by ID" })
+});
+
+// Delete case (admin only)
+app.delete("/cases/:id", authenticate, checkPermission("delete"), (req, res) => {
+  // Delete case logic
+  return res.status(200).json({ message: "Delete Case by ID" })
+});
+
+// Search cases (admin and user)
+app.get("/search/cases", authenticate, checkPermission("search"), (req, res) => {
+  // Search cases logic
+  return res.status(200).json({ message: "Search Cases" })
+});
+
+// Create category (admin only)
+app.post("/category", authenticate, checkPermission("create"), (req, res) => {
+  // Create category logic
+  return res.status(200).json({ message: "Create Category" })
+});
+
+// Get category (admin and user)
+app.get("/category", authenticate, checkPermission("view"), (req, res) => {
+  // Get category logic
+  return res.status(200).json({ message: "Get Category" })
+});
+
 
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));
