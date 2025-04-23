@@ -11,6 +11,7 @@ const nodemailer = require("nodemailer");
 
 const Admin = require("./models/Admin");
 const Category = require("./models/Category");
+const Case = require("./models/Case");
 
 require("dotenv").config();
 
@@ -212,8 +213,20 @@ const categorySchema = Joi.object({
   description: Joi.string().allow('').optional().trim(),
 });
 
-// Not done - CAPTCHA
-// Admin Register End point - Tested
+const caseSchema = Joi.object({
+  primaryImage: Joi.string().required(),
+  images: Joi.array().items(Joi.string()),
+  title: Joi.string().required(),
+  category: Joi.string().required(),
+  content: Joi.string().required(),
+  description: Joi.string().required(),
+  videos: Joi.array().items(Joi.string())
+});
+
+
+// ADMIN AUTHENTICATION
+
+// Admin Register End point - Tested ( Not done - CAPTCHA )
 app.post("/admin-register", limiter, async (req, res) => {
   // Validation check
   try {
@@ -303,7 +316,7 @@ app.post("/admin-register", limiter, async (req, res) => {
   }
 });
 
-// Admin Login End point
+// Admin Login End point - Tested
 app.post("/admin-login", limiter, async (req, res) => {
   try {
     await loginSchema.validateAsync(req.body);
@@ -533,58 +546,10 @@ app.get("/admins", async (req, res) => {
   }
 });
 
-// Create case (admin only)
-app.post("/cases", authenticate, checkPermission("create"), async (req, res) => {
-  try {
-    const { title, description, category } = req.body;
-    const caseDoc = new Case({ title, description, category });
-    await caseDoc.save();
-    res.status(201).json({ message: "Case created successfully" });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Error creating case" });
-  }
-});
 
-// View All Cases (admin and user)
-app.get("/cases", authenticate, checkPermission("view"), (req, res) => {
-  return res.status(200).json({ message: "Get All Cases" })
-});
+// CATEGORY CRUD OPERATION
 
-// View Case by ID (admin and user)
-app.get("/cases/:id", authenticate, checkPermission("view"), async (req, res) => {
-  try {
-    const caseId = req.params.id;
-    const caseDoc = await Case.findById(caseId);
-    if (!caseDoc) {
-      return res.status(404).json({ message: "Case not found" });
-    }
-    res.status(200).json(caseDoc);
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Error fetching case" });
-  }
-});
-
-// Update Case (admin only)
-app.put("/cases/:id", authenticate, checkPermission("update"), (req, res) => {
-  // Update case logic
-  return res.status(200).json({ message: "Update Case by ID" })
-});
-
-// Delete Case (admin only)
-app.delete("/cases/:id", authenticate, checkPermission("delete"), (req, res) => {
-  // Delete case logic
-  return res.status(200).json({ message: "Delete Case by ID" })
-});
-
-// Search Cases (admin and user)
-app.get("/search/cases", authenticate, checkPermission("search"), (req, res) => {
-  // Search cases logic
-  return res.status(200).json({ message: "Search Cases" })
-});
-
-// Create Category (admin only)
+// Create Category (admin only) - Tested
 app.post("/category", authenticate, checkPermission("create"), async (req, res) => {
   try {
     await categorySchema.validateAsync(req.body);
@@ -614,7 +579,7 @@ app.post("/category", authenticate, checkPermission("create"), async (req, res) 
   }
 });
 
-// Get Category (admin and user)
+// Get Category (admin and user) - Tested
 app.get("/category", authenticate, checkPermission("view"), async (req, res) => {
   try {
     const categories = await Category.find();
@@ -625,7 +590,7 @@ app.get("/category", authenticate, checkPermission("view"), async (req, res) => 
   }
 });
 
-// Delete Category (admin only)
+// Delete Category (admin only) - Tested
 app.delete("/category/:id", authenticate, checkPermission("delete"), async (req, res) => {
   try {
     const categoryId = req.params.id;
@@ -640,7 +605,7 @@ app.delete("/category/:id", authenticate, checkPermission("delete"), async (req,
   }
 });
 
-// Update Category (admin only)
+// Update Category (admin only) - Tested
 app.put("/category/:id", authenticate, checkPermission("update"), async (req, res) => {
   try {
     await categorySchema.validateAsync(req.body);
@@ -670,6 +635,124 @@ app.put("/category/:id", authenticate, checkPermission("update"), async (req, re
     console.log(error);
     res.status(500).json({ message: "Error updating category" });
   }
+});
+
+
+// CASE CRUD OPERATION
+
+// Create case (admin only) - Tested
+app.post("/case", authenticate, checkPermission("create"), async (req, res) => {
+  try {
+    const categoryId = req.body.category;
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      return res.status(400).json({ message: "Invalid category ID" });
+    }
+
+    const category = await Category.findById(categoryId);
+    if (!category) {
+      return res.status(400).json({ message: "Category not found" });
+    }
+
+    delete req.body.postedBy; // Delete postedBy field from request body
+    const caseData = new Case(req.body);
+    await caseData.save();
+    res.status(201).json({ message: "Case created successfully" });
+  } catch (error) {
+    console.log(error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: "Error creating case" });
+  }
+});
+
+// View All Cases (admin and user) - Tested
+app.get("/case", async (req, res) => {
+  try {
+    const cases = await Case.find().populate('category');
+    res.status(200).json(cases);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error fetching cases" });
+  }
+});
+
+// View Case by ID (admin and user) - Tested
+app.get("/case/:id", async (req, res) => {
+  try {
+    const caseId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(caseId)) {
+      return res.status(400).json({ message: "Invalid case ID" });
+    }
+
+    const caseData = await Case.findById(caseId).populate('category');
+    if (!caseData) {
+      return res.status(404).json({ message: "Case not found" });
+    }
+
+    res.status(200).json(caseData);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error fetching case" });
+  }
+});
+
+// Update Case (admin only) - Tested
+app.put("/case/:id", authenticate, checkPermission("update"), async (req, res) => {
+  try {
+    const caseId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(caseId)) {
+      return res.status(400).json({ message: "Invalid case ID" });
+    }
+    const categoryId = req.body.category;
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      return res.status(400).json({ message: "Invalid category ID" });
+    }
+
+    const category = await Category.findById(categoryId);
+    if (!category) {
+      return res.status(400).json({ message: "Category not found" });
+    }
+    
+    delete req.body.postedBy; // Delete postedBy field from request body
+    const caseData = await Case.findByIdAndUpdate(caseId, req.body, { new: true });
+    if (!caseData) {
+      return res.status(404).json({ message: "Case not found" });
+    }
+    res.status(200).json({ message: "Case updated successfully", caseData });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error updating case" });
+  }
+});
+
+// Delete Case (admin only) - Tested
+app.delete("/case/:id", authenticate, checkPermission("delete"), async (req, res) => {
+  try {
+    const caseId = req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(caseId)) {
+      return res.status(400).json({ message: "Invalid case ID" });
+    }
+
+    const caseDoc = await Case.findByIdAndDelete(caseId);
+    if (!caseDoc) {
+      return res.status(404).json({ message: "Case not found" });
+    }
+
+    res.status(200).json({ message: "Case deleted successfully" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error deleting case" });
+  }
+});
+
+
+// SEARCH FUNCTIONALITY
+
+// Search Cases (admin and user)
+app.get("/search/cases", authenticate, checkPermission("search"), (req, res) => {
+  // Search cases logic
+  return res.status(200).json({ message: "Search Cases" })
 });
 
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));

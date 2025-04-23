@@ -28,7 +28,9 @@ const adminSchema = new mongoose.Schema({
   verificationFailed: Boolean,
   resetToken: String,
   resetTokenExpiration: Date,
-});
+  },
+  { timestamps: true }
+);
 
 const Admin = mongoose.model('Admin', adminSchema);
 
