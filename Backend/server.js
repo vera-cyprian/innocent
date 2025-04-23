@@ -10,6 +10,7 @@ const cookieParser = require("cookie-parser");
 const nodemailer = require("nodemailer");
 
 const Admin = require("./models/Admin");
+const Category = require("./models/Category");
 
 require("dotenv").config();
 
@@ -58,6 +59,7 @@ const verifyTokenMiddleware = async (req, res, next) => {
   }
 };
 
+// Check User Permission
 const checkPermission = (action) => {
   return async (req, res, next) => {
     try {
@@ -200,6 +202,14 @@ const resetPasswordSchema = Joi.object({
     "string.max": "Password must not exceed 8 characters",
     "any.required": "Password is required",
   }),
+});
+
+const categorySchema = Joi.object({
+  name: Joi.string().required().trim().messages({
+    "string.empty": "Category name is required",
+    "any.required": "Category name is required",
+  }),
+  description: Joi.string().allow('').optional().trim(),
 });
 
 // Not done - CAPTCHA
@@ -524,52 +534,142 @@ app.get("/admins", async (req, res) => {
 });
 
 // Create case (admin only)
-app.post("/cases", authenticate, checkPermission("create"), (req, res) => {
-  // Create case logic
-  return res.status(200).json({ message: "Add Cases" })
+app.post("/cases", authenticate, checkPermission("create"), async (req, res) => {
+  try {
+    const { title, description, category } = req.body;
+    const caseDoc = new Case({ title, description, category });
+    await caseDoc.save();
+    res.status(201).json({ message: "Case created successfully" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error creating case" });
+  }
 });
 
-// View case (admin and user)
+// View All Cases (admin and user)
 app.get("/cases", authenticate, checkPermission("view"), (req, res) => {
-  // View case logic
   return res.status(200).json({ message: "Get All Cases" })
 });
 
-// View case (admin and user)
-app.get("/cases/:id", authenticate, checkPermission("view"), (req, res) => {
-  // View case logic
-  return res.status(200).json({ message: "Get Cases by ID" })
+// View Case by ID (admin and user)
+app.get("/cases/:id", authenticate, checkPermission("view"), async (req, res) => {
+  try {
+    const caseId = req.params.id;
+    const caseDoc = await Case.findById(caseId);
+    if (!caseDoc) {
+      return res.status(404).json({ message: "Case not found" });
+    }
+    res.status(200).json(caseDoc);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error fetching case" });
+  }
 });
 
-// Update case (admin only)
+// Update Case (admin only)
 app.put("/cases/:id", authenticate, checkPermission("update"), (req, res) => {
   // Update case logic
   return res.status(200).json({ message: "Update Case by ID" })
 });
 
-// Delete case (admin only)
+// Delete Case (admin only)
 app.delete("/cases/:id", authenticate, checkPermission("delete"), (req, res) => {
   // Delete case logic
   return res.status(200).json({ message: "Delete Case by ID" })
 });
 
-// Search cases (admin and user)
+// Search Cases (admin and user)
 app.get("/search/cases", authenticate, checkPermission("search"), (req, res) => {
   // Search cases logic
   return res.status(200).json({ message: "Search Cases" })
 });
 
-// Create category (admin only)
-app.post("/category", authenticate, checkPermission("create"), (req, res) => {
-  // Create category logic
-  return res.status(200).json({ message: "Create Category" })
+// Create Category (admin only)
+app.post("/category", authenticate, checkPermission("create"), async (req, res) => {
+  try {
+    await categorySchema.validateAsync(req.body);
+  } catch (error) {
+    return res.status(400).json({ message: error.details[0].message });
+  }
+
+  const { name, description } = req.body;
+
+  // Check if category already exists
+  const existingCategory = await Category.findOne({ name });
+  if (existingCategory) {
+    return res.status(400).json({ message: "Category already exists" });
+  }
+
+  try {
+    const categoryData = { name };
+    if (description !== undefined && description.trim() !== '') {
+      categoryData.description = description;
+    }
+    const category = new Category(categoryData);
+    await category.save();
+    res.status(201).json({ message: "Category created successfully" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error creating category" });
+  }
 });
 
-// Get category (admin and user)
-app.get("/category", authenticate, checkPermission("view"), (req, res) => {
-  // Get category logic
-  return res.status(200).json({ message: "Get Category" })
+// Get Category (admin and user)
+app.get("/category", authenticate, checkPermission("view"), async (req, res) => {
+  try {
+    const categories = await Category.find();
+    res.status(200).json(categories);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error fetching categories" });
+  }
 });
 
+// Delete Category (admin only)
+app.delete("/category/:id", authenticate, checkPermission("delete"), async (req, res) => {
+  try {
+    const categoryId = req.params.id;
+    const category = await Category.findByIdAndDelete(categoryId);
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+    res.status(200).json({ message: "Category deleted successfully" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error deleting category" });
+  }
+});
+
+// Update Category (admin only)
+app.put("/category/:id", authenticate, checkPermission("update"), async (req, res) => {
+  try {
+    await categorySchema.validateAsync(req.body);
+  } catch (error) {
+    return res.status(400).json({ message: error.details[0].message });
+  }
+
+  try {
+    const categoryId = req.params.id;
+    const { name, description } = req.body;
+
+    // Check if category name already exists
+    const existingCategory = await Category.findOne({ name, _id: { $ne: categoryId } });
+    if (existingCategory) {
+      return res.status(400).json({ message: "Category name already exists" });
+    }
+
+    const updateData = { name };
+    updateData.description = description.trim() === '' ? 'No Description' : description;
+
+    const category = await Category.findByIdAndUpdate(categoryId, updateData, { new: true });
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+    res.status(200).json({ message: "Category updated successfully", category });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error updating category" });
+  }
+});
 
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));
