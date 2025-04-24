@@ -1,47 +1,14 @@
-<!-- 
-// const multer = require("multer");
-// app.use('/uploads', express.static('uploads'));
-// app.set("view engine", "ejs");
-
-// app.post('/category', async (req, res) => {
-//   const { category } = req.body;
-//   await new Category({ name: category }).save();
-//   res.redirect('/select-category');
-// });
-
-// app.get('/select-category', (req, res) => res.sendFile(__dirname + '/views/select-category.html'));
-// app.get('/add-case', async (req, res) => {
-//   const categories = await Category.find();
-//   res.send(`
-//     <html><head><link rel="stylesheet" href="/css/style.css"></head><body>
-//     <header><h1>Add Case</h1></header>
-//     <div class="container">
-//     <form action="/add-case" method="POST" enctype="multipart/form-data">
-//     <input type="datetime-local" name="date" required>
-//     <select name="category" required>
-//       ${categories.map(c => `<option value="${c.name}">${c.name}</option>`).join('')}
-//     </select>
-//     <textarea name="content" rows="5" placeholder="Case details..." required></textarea>
-//     <input type="file" name="image" accept="image/*">
-//     <button type="submit">Post Case</button>
-//     </form></div></body></html>
-//   `);
-// });
-
-// const Category = mongoose.model('Category', new mongoose.Schema({
-//   name: String
-// }));
-
-// const Case = mongoose.model('Case', new mongoose.Schema({
-//   date: String,
-//   category: String,
-//   content: String,
-//   image: String
-// }));
-
-// File upload config
-// const storage = multer.diskStorage({
-//   destination: 'uploads/',
-//   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
-// });
-// const upload = multer({ storage }); -->
+Search, filtering and pagination Functionality
+CRUD for User Profiles or Account
+Implementing Notifications and alerts
+Dynamic Role-Based Access control where admin can perform CRUD Operation on other admins and assign roles
+Logout Functionality
+Session management
+Caching and Load balancer
+Commenting and discussion system
+Activity logging and auditing
+Data analytics and reporting
+Integration with other services
+Customizable dashboard (dark and light mode)
+User feedback and rating system
+Notification preferences: Allow users to customize their notification preferences, such as email or in-app notifications.

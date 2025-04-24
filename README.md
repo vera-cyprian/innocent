@@ -33,6 +33,8 @@ A simple legal case management system with admin registration/login, built with 
 
 - Admin registration and login
 - Password hashing using `bcrypt`
+- Email Verification after registration 
+- Forgot and reset password through email
 - MongoDB integration using `mongoose`
 - Static frontend served through Express
 - Easily extensible for case/category management
@@ -46,6 +48,9 @@ A simple legal case management system with admin registration/login, built with 
 - MongoDB + Mongoose
 - bcrypt
 - dotenv
+- nodemailer
+- cookie-parser
+- joi
 - multer (optional for file uploads)
 - HTML, CSS (Frontend)
 
