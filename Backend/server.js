@@ -374,6 +374,16 @@ app.post("/admin-login", limiter, async (req, res) => {
   res.status(200).json({ message: "Login Successful" });
 });
 
+// Admin Logout End point - Tested
+app.post("/admin-logout", authenticate, (req, res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+  });
+  res.status(200).json({ message: "Logged out successfully" });
+});
+
 // Verify Email End point - Tested
 app.get("/api/verify-email/:token", async (req, res) => {
   try {
