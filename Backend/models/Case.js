@@ -12,6 +12,15 @@ const caseSchema = new mongoose.Schema(
     },
     content: { type: String, required: true },
     description: { type: String, required: true },
+    tag: {
+      type: [{ type: String }],
+      validate: {
+        validator: function(v) {
+          return v.length > 0;
+        },
+        message: 'At least one tag is required.'
+      }
+    },   
     postedBy: { type: String, default: "Admin" },
     videos: [{ type: String }],
   },

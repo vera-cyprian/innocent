@@ -225,6 +225,7 @@ const caseSchema = Joi.object({
   category: Joi.string().required(),
   content: Joi.string().required(),
   description: Joi.string().required(),
+  tag: Joi.array().items(Joi.string().required()).min(1).required(),
   videos: Joi.array().items(Joi.string())
 });
 
@@ -658,6 +659,12 @@ app.put("/category/:id", authenticate, checkPermission("update"), async (req, re
 // Create case (admin only) - Tested
 app.post("/case", authenticate, checkPermission("create"), async (req, res) => {
   try {
+    await caseSchema.validateAsync(req.body);
+  } catch (error) {
+    return res.status(400).json({ message: error.details[0].message });
+  }
+
+  try {
     const categoryId = req.body.category;
     if (!mongoose.Types.ObjectId.isValid(categoryId)) {
       return res.status(400).json({ message: "Invalid category ID" });
@@ -772,11 +779,14 @@ app.get("/search/cases", authenticate, checkPermission("search"), async (req, re
       return res.status(400).json({ message: "Search query is required" });
     }
 
+    const regex = new RegExp(query, "i");
+
     const cases = await Case.find({
       $or: [
-        { title: { $regex: query, $options: "i" } },
-        { description: { $regex: query, $options: "i" } },
-        { content: { $regex: query, $options: "i" } },
+        { title: regex },
+        { description: regex },
+        { content: regex },
+        { tag: regex },
       ],
     }).populate("category");
 
