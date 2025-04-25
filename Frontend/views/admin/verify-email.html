@@ -4,12 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Email Verification</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-    }
-  </style>
+  <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body>
   <h1 id="message"></h1>
@@ -20,7 +15,9 @@
     fetch(`/api/verify-email/${token}`)
       .then(res => res.json())
       .then(data => {
+        // data.message displays either Invalid or expired token or Email verified successfully
         document.getElementById('message').innerText = data.message;
+
         if (data.message === 'Email verified successfully') {
           document.getElementById('message').style.color = 'green';
 

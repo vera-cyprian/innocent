@@ -134,7 +134,12 @@ app.get("/reset-password/:token", (req, res) => {
     path.join(__dirname, "../Frontend/views/admin/reset-password.html")
   );
 });
-app.get("/case-viewer", authenticate, (req, res) => {
+// app.get("/case-viewer", authenticate, (req, res) => {
+//   res.sendFile(
+//     path.join(__dirname, "../Frontend/views/admin/case-viewer.html")
+//   );
+// });
+app.get("/case-viewer", (req, res) => {
   res.sendFile(
     path.join(__dirname, "../Frontend/views/admin/case-viewer.html")
   );
