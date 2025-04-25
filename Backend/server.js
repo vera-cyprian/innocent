@@ -12,6 +12,7 @@ const nodemailer = require("nodemailer");
 const Admin = require("./models/Admin");
 const Category = require("./models/Category");
 const Case = require("./models/Case");
+const Comment = require("./models/Comment");
 
 require("dotenv").config();
 
@@ -797,7 +798,7 @@ app.get("/search/cases", authenticate, checkPermission("search"), async (req, re
   }
 });
 
-// Filter Cases by Category
+// Filter Cases by Category - Tested
 app.get("/cases/filter", authenticate, checkPermission("view"), async (req, res) => {
   try {
     const categoryId = req.query.category;
@@ -813,7 +814,7 @@ app.get("/cases/filter", authenticate, checkPermission("view"), async (req, res)
   }
 });
 
-// Paginate Cases
+// Paginate Cases - Tested
 app.get("/cases", authenticate, checkPermission("view"), async (req, res) => {
   try {
     const page = req.query.page || 1;
@@ -841,5 +842,57 @@ app.get("/cases", authenticate, checkPermission("view"), async (req, res) => {
   }
 });
 
+
+// COMMENT AND REPLY FUNCTIONALITY
+
+// Create Comment or Reply 
+app.post("/cases/:caseId/comments", async (req, res) => {
+  try {
+    const caseId = req.params.caseId;
+    const { username, email, comment, parentCommentId } = req.body;
+
+    const newComment = new Comment({
+      caseId,
+      username,
+      email,
+      comment,
+      parentCommentId,
+    });
+
+    await newComment.save();
+
+    if (parentCommentId) {
+      // If it's a reply, add the comment ID to the parent comment's replies array
+      await Comment.findByIdAndUpdate(parentCommentId, {
+        $push: { replies: newComment._id },
+      });
+    }
+
+    res.status(201).json(newComment);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error creating comment" });
+  }
+});
+
+// Get Comment or Reply
+app.get("/cases/:caseId/comments", async (req, res) => {
+  try {
+    const caseId = req.params.caseId;
+
+    const comments = await Comment.find({ caseId, parentCommentId: null })
+      .populate({
+        path: "replies",
+        populate: {
+          path: "replies",
+        },
+      });
+
+    res.status(200).json(comments);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error getting comments" });
+  }
+});
 
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));
