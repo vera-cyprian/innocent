@@ -764,10 +764,72 @@ app.delete("/case/:id", authenticate, checkPermission("delete"), async (req, res
 
 // SEARCH FUNCTIONALITY
 
-// Search Cases (admin and user)
-app.get("/search/cases", authenticate, checkPermission("search"), (req, res) => {
-  // Search cases logic
-  return res.status(200).json({ message: "Search Cases" })
+// Search Cases (admin and user) - Tested
+app.get("/search/cases", authenticate, checkPermission("search"), async (req, res) => {
+  try {
+    const query = req.query.q;
+    if (!query) {
+      return res.status(400).json({ message: "Search query is required" });
+    }
+
+    const cases = await Case.find({
+      $or: [
+        { title: { $regex: query, $options: "i" } },
+        { description: { $regex: query, $options: "i" } },
+        { content: { $regex: query, $options: "i" } },
+      ],
+    }).populate("category");
+
+    res.status(200).json(cases);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error searching cases" });
+  }
 });
+
+// Filter Cases by Category
+app.get("/cases/filter", authenticate, checkPermission("view"), async (req, res) => {
+  try {
+    const categoryId = req.query.category;
+    if (!categoryId) {
+      return res.status(400).json({ message: "Category ID is required" });
+    }
+
+    const cases = await Case.find({ category: categoryId }).populate("category");
+    res.status(200).json(cases);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error filtering cases" });
+  }
+});
+
+// Paginate Cases
+app.get("/cases", authenticate, checkPermission("view"), async (req, res) => {
+  try {
+    const page = req.query.page || 1;
+    const limit = 10;
+
+    const cases = await Case.find()
+      .populate("category")
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    const totalCases = await Case.countDocuments();
+    const totalPages = Math.ceil(totalCases / limit);
+
+    res.status(200).json({
+      cases,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalCases,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Error fetching cases" });
+  }
+});
+
 
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));
