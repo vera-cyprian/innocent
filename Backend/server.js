@@ -97,7 +97,7 @@ app.get("/", (req, res) => {
 });
 app.get("/admin-dashboard", authenticate, (req, res) => {
   // Only authenticated admins can access this route
-  res.sendFile(path.join(__dirname, "../Frontend/views/admin/register.html"));
+  res.sendFile(path.join(__dirname, "../Frontend/views/admin/admin-dashboard.html"));
 });
 app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "../Frontend/views/admin/login.html"));
@@ -233,7 +233,7 @@ const caseSchema = Joi.object({
 
 // ADMIN AUTHENTICATION
 
-// Admin Register End point - Tested ( Not done - CAPTCHA )
+// Admin Register End point - Connected ( Not done - CAPTCHA )
 app.post("/admin-register", limiter, async (req, res) => {
   // Validation check
   try {
@@ -323,7 +323,7 @@ app.post("/admin-register", limiter, async (req, res) => {
   }
 });
 
-// Admin Login End point - Tested
+// Admin Login End point - Connected
 app.post("/admin-login", limiter, async (req, res) => {
   try {
     await loginSchema.validateAsync(req.body);
@@ -386,7 +386,7 @@ app.post("/admin-logout", authenticate, (req, res) => {
   res.status(200).json({ message: "Logged out successfully" });
 });
 
-// Verify Email End point - Tested
+// Verify Email End point - Connected
 app.get("/api/verify-email/:token", async (req, res) => {
   try {
     const token = req.params.token;
@@ -404,7 +404,7 @@ app.get("/api/verify-email/:token", async (req, res) => {
   }
 });
 
-// Forgot Password Endpoint - Tested
+// Forgot Password Endpoint - Connected
 app.post("/forgot-password", async (req, res) => {
   try {
     await forgotPasswordSchema.validateAsync(req.body);
@@ -462,7 +462,7 @@ app.post("/forgot-password", async (req, res) => {
   }
 });
 
-// Reset Password Endpoint - Tested
+// Reset Password Endpoint - Connected
 app.post("/reset-password/:token", async (req, res) => {
   try {
     await resetPasswordSchema.validateAsync(req.body);
@@ -500,7 +500,7 @@ app.post("/reset-password/:token", async (req, res) => {
   }
 });
 
-// Resend Verification Endpoint - Tested
+// Resend Verification Endpoint - Connected
 app.post("/resend-verification", verifyTokenMiddleware, async (req, res) => {
   try {
     const admin = await Admin.findById(req.adminId);
@@ -540,6 +540,9 @@ app.post("/resend-verification", verifyTokenMiddleware, async (req, res) => {
     res.status(500).json({ message: "Error processing request" });
   }
 });
+
+
+// ADMIN CRUD OPERATION
 
 // Delete All Admins from Database End point - Tested
 app.delete("/admins", async (req, res) => {
@@ -596,7 +599,7 @@ app.post("/category", authenticate, checkPermission("create"), async (req, res) 
   }
 });
 
-// Get Category (admin and user) - Tested
+// Get Category (admin and user) - Connected
 app.get("/category", authenticate, checkPermission("view"), async (req, res) => {
   try {
     const categories = await Category.find();
@@ -689,7 +692,7 @@ app.post("/case", authenticate, checkPermission("create"), async (req, res) => {
   }
 });
 
-// View All Cases (admin and user) - Tested
+// View All Cases (admin and user) - Connected
 app.get("/case", async (req, res) => {
   try {
     const cases = await Case.find().populate('category');
@@ -772,16 +775,17 @@ app.delete("/case/:id", authenticate, checkPermission("delete"), async (req, res
 
 // SEARCH FUNCTIONALITY
 
-// Search Cases (admin and user) - Tested
+// Search Cases (admin and user) - Connected
 app.get("/search/cases", authenticate, checkPermission("search"), async (req, res) => {
   try {
     const query = req.query.q;
+    const page = 1;
+    const limit = 10;
     if (!query) {
       return res.status(400).json({ message: "Search query is required" });
     }
 
     const regex = new RegExp(query, "i");
-
     const cases = await Case.find({
       $or: [
         { title: regex },
@@ -789,36 +793,67 @@ app.get("/search/cases", authenticate, checkPermission("search"), async (req, re
         { content: regex },
         { tag: regex },
       ],
-    }).populate("category");
-
-    res.status(200).json(cases);
+    }).populate("category") 
+      .skip((page - 1) * limit)
+      .limit(limit);
+      const totalCases = await Case.countDocuments({
+        $or: [
+            { title: regex },
+            { description: regex },
+            { content: regex },
+            { tag: regex },
+        ],
+    });
+    const totalPages = Math.ceil(totalCases / limit);
+    res.status(200).json({
+        cases,
+        pagination: {
+            currentPage: page,
+            totalPages,
+            totalCases,
+        },
+    });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Error searching cases" });
   }
 });
 
-// Filter Cases by Category - Tested
+// Filter Cases by Category (admin and user) - Connected
 app.get("/cases/filter", authenticate, checkPermission("view"), async (req, res) => {
   try {
     const categoryId = req.query.category;
+    const page = 1;
+    const limit = 10;
     if (!categoryId) {
       return res.status(400).json({ message: "Category ID is required" });
     }
 
-    const cases = await Case.find({ category: categoryId }).populate("category");
-    res.status(200).json(cases);
+    const cases = await Case.find({ category: categoryId }).populate("category")
+      .populate("category")
+      .skip((page - 1) * limit)
+      .limit(limit);
+    const totalCases = await Case.countDocuments({ category: categoryId });
+    const totalPages = Math.ceil(totalCases / limit);
+    res.status(200).json({
+      cases,
+      pagination: {
+          currentPage: page,
+          totalPages,
+          totalCases,
+      },
+    });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Error filtering cases" });
   }
 });
 
-// Paginate Cases - Tested
+// Paginate Cases (admin and user) - Connected
 app.get("/cases", authenticate, checkPermission("view"), async (req, res) => {
   try {
     const page = req.query.page || 1;
-    const limit = 10;
+    const limit = 2;  // Should be 10
 
     const cases = await Case.find()
       .populate("category")
@@ -845,7 +880,8 @@ app.get("/cases", authenticate, checkPermission("view"), async (req, res) => {
 
 // COMMENT AND REPLY FUNCTIONALITY
 
-// Create Comment or Reply 
+
+// Create Comment or Reply (only user) - Tested
 app.post("/cases/:caseId/comments", async (req, res) => {
   try {
     const caseId = req.params.caseId;
@@ -875,7 +911,7 @@ app.post("/cases/:caseId/comments", async (req, res) => {
   }
 });
 
-// Get Comment or Reply
+// Get Comment or Reply (only user) - Tested
 app.get("/cases/:caseId/comments", async (req, res) => {
   try {
     const caseId = req.params.caseId;

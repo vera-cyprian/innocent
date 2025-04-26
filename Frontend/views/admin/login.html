@@ -41,7 +41,7 @@
         window.location.href = "/resend-verification";
       } else if (res.status === 200 && data.message === "Login Successful") {
         alert(data.message);
-        window.location.href = "/case-viewer";
+        window.location.href = "/admin-dashboard";
       } else {
         alert(data.message);
       }
