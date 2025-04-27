@@ -71,7 +71,7 @@
 
 <body>
   <header>
-    <h1>Admin Dashboard</h1>
+    <h1>Admin Dashboard</h1> <button id="logout-btn">Logout</button>
     <button id="create-case-btn">Create Case</button>
     <input id="search-input" type="search" placeholder="Search for cases here">
     <select id="category-filter">
@@ -88,6 +88,9 @@
             <th>Title</th>
             <th>Category</th>
             <th>Actions</th>
+            <th>Description</th>
+            <th>Tag</th>
+            <th>Action Buttons</th>
           </tr>
         </thead>
         <tbody id="cases-tbody">
@@ -143,6 +146,9 @@
                   <td>${caseData._id}</td>
                   <td>${caseData.title}</td>
                   <td>${caseData.category.name}</td>
+                  <td>${caseData.content}</td>
+                  <td>${caseData.description}</td>
+                  <td>${caseData.tag}</td>
                   <td>
                       <button class="edit-btn">Edit</button>
                       <button class="delete-btn">Delete</button>
@@ -321,6 +327,9 @@
                                               <td>${caseData._id}</td>
                                               <td>${caseData.title}</td>
                                               <td>${caseData.category.name}</td>
+                                              <td>${caseData.content}</td>
+                                              <td>${caseData.description}</td>
+                                              <td>${caseData.tag}</td>
                                               <td>
                                                   <button class="edit-btn">Edit</button>
                                                   <button class="delete-btn">Delete</button>
@@ -462,6 +471,9 @@
                     <td>${caseData._id}</td>
                     <td>${caseData.title}</td>
                     <td>${caseData.category.name}</td>
+                    <td>${caseData.content}</td>
+                    <td>${caseData.description}</td>
+                    <td>${caseData.tag}</td>
                     <td>
                         <button class="edit-btn">Edit</button>
                         <button class="delete-btn">Delete</button>
@@ -500,6 +512,19 @@
       createCaseModal.style.display = 'none';
     }
   });
+
+  const logoutBtn = document.getElementById('logout-btn');
+logoutBtn.addEventListener('click', () => {
+    fetch('/admin-logout', {
+        method: 'POST',
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            window.location.href = '/login'; // redirect to login page after logout
+        })
+        .catch(error => console.error(error));
+});
 
 </script>
 </body>

@@ -880,7 +880,6 @@ app.get("/cases", authenticate, checkPermission("view"), async (req, res) => {
 
 // COMMENT AND REPLY FUNCTIONALITY
 
-
 // Create Comment or Reply (only user) - Tested
 app.post("/cases/:caseId/comments", async (req, res) => {
   try {
