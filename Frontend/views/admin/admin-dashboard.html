@@ -65,6 +65,7 @@
       padding: 2em;
       border: 1px solid #ddd;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      width: 300px;
     }
   </style>
 </head>
@@ -85,6 +86,7 @@
         <thead>
           <tr>
             <th>Case ID</th>
+            <th>Primary Image</th>
             <th>Title</th>
             <th>Category</th>
             <th>Actions</th>
@@ -100,7 +102,7 @@
     </section>
   </main>
   <div id="create-case-modal" class="modal">
-    <form id="create-case-form">
+    <form id="create-case-form" class="modal-content">
       <label for="primaryImage">Primary Image:</label>
       <input type="text" id="primaryImage" name="primaryImage"><br><br>
       <label for="images">Images:</label>
@@ -119,7 +121,7 @@
       <input type="text" id="tag" name="tag"><br><br>
       <label for="videos">Videos:</label>
       <input type="text" id="videos" name="videos"><br><br>
-      <button type="submit">Create Case</button>
+      <button id="submit-button" type="submit">Create Case</button>
   </form>
 </div>
 
@@ -127,9 +129,9 @@
 <script>
   const casesTable = document.getElementById('cases-table');
   const casesTbody = document.getElementById('cases-tbody');
-  const createCaseBtn = document.getElementById('create-case-btn');
-  const createCaseModal = document.getElementById('create-case-modal');
-  const createCaseForm = document.getElementById('create-case-form');
+  const caseBtn = document.getElementById('create-case-btn');
+  const caseModal = document.getElementById('create-case-modal');
+  const caseForm = document.getElementById('create-case-form');
 
   // Function to fetch cases for a specific page
   function fetchCases(page = 1) {
@@ -144,6 +146,7 @@
           const row = document.createElement('tr');
           row.innerHTML = `
                   <td>${caseData._id}</td>
+                  <td><img src="${caseData.primaryImage}"/></td>
                   <td>${caseData.title}</td>
                   <td>${caseData.category.name}</td>
                   <td>${caseData.content}</td>
@@ -211,8 +214,11 @@
     })
     .catch(error => console.error(error));
 
+
+  let editingCaseId = null;
+
   // Handle form submission
-  createCaseForm.addEventListener('submit', (e) => {
+  caseForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const primaryImage = document.getElementById('primaryImage').value;
     const images = document.getElementById('images').value.split(',');
@@ -223,172 +229,99 @@
     const tag = document.getElementById('tag').value.split(',');
     const videos = document.getElementById('videos').value.split(',');
     const caseData = {
-        primaryImage,
-        images,
-        title,
-        category,
-        content,
-        description,
-        tag,
-        videos,
+      primaryImage,
+      images,
+      title,
+      category,
+      content,
+      description,
+      tag,
+      videos,
     };
-    fetch('/case', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(caseData),
-    })
-    .then(response => response.json())
-    .then(() => {
-      createCaseModal.style.display = 'none';
-      // Refresh the cases table
-      casesTbody.innerHTML = '';
-      fetch('/cases')
-        .then(response => response.json())
-        .then(data => {
-            const cases = data.cases;
-            cases.forEach(caseData => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${caseData._id}</td>
-                    <td>${caseData.title}</td>
-                    <td>${caseData.category.name}</td>
-                    <td>
-                        <button class="edit-btn">Edit</button>
-                        <button class="delete-btn">Delete</button>
-                    </td>
-                `;
-                casesTbody.appendChild(row);
-            });
+
+    if (editingCaseId === null) {
+      // Create case
+      fetch('/case', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(caseData),
+      })
+      .then(response => response.json())
+      .then(() => {
+          caseModal.style.display = 'none';
+          fetchCases();
         })
         .catch(error => console.error(error));
-      })
-      .catch(error => console.error(error));
+    } else {
+        // Update form submission to edit case
+        fetch(`/case/${editingCaseId}`, {
+          method: 'PUT',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(caseData),
+        })
+        .then(response => response.json())
+        .then(() => {
+          caseModal.style.display = 'none';
+          fetchCases();
+          editingCaseId = null;
+          document.getElementById('submit-button').innerText = "Create Case";
+        })
+        .catch(error => console.error(error));
+      }
   });
 
   // Edit case
   casesTbody.addEventListener('click', (e) => {
       if (e.target.classList.contains('edit-btn')) {
-          const caseId = e.target.parentNode.parentNode.children[0].textContent;
-          // Fetch case data and populate the form
-          fetch(`/case/${caseId}`)
-              .then(response => response.json())
-              .then(caseData => {
-                  document.getElementById('primaryImage').value = caseData.primaryImage;
-                  document.getElementById('images').value = caseData.images.join(',');
-                  document.getElementById('title').value = caseData.title;
-                  document.getElementById('category').value = caseData.category._id;
-                  document.getElementById('content').value = caseData.content;
-                  document.getElementById('description').value = caseData.description;
-                  document.getElementById('tag').value = caseData.tag.join(',');
-                  document.getElementById('videos').value = caseData.videos.join(',');
-                  createCaseModal.style.display = 'flex';
-                  // Update form submission to edit case
-                  createCaseForm.onsubmit = (e) => {
-                      e.preventDefault();
-                      const primaryImage = document.getElementById('primaryImage').value;
-                      const images = document.getElementById('images').value.split(',');
-                      const title = document.getElementById('title').value;
-                      const category = document.getElementById('category').value;
-                      const content = document.getElementById('content').value;
-                      const description = document.getElementById('description').value;
-                      const tag = document.getElementById('tag').value.split(',');
-                      const videos = document.getElementById('videos').value.split(',');
-                      const updatedCaseData = {
-                          primaryImage,
-                          images,
-                          title,
-                          category,
-                          content,
-                          description,
-                          tag,
-                          videos,
-                      };
-                      fetch(`/case/${caseId}`, {
-                          method: 'PUT',
-                          headers: {
-                              'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify(updatedCaseData),
-                      })
-                          .then(response => response.json())
-                          .then(() => {
-                              createCaseModal.style.display = 'none';
-                              // Refresh the cases table
-                              casesTbody.innerHTML = '';
-                              fetch('/cases')
-                                  .then(response => response.json())
-                                  .then(data => {
-                                      const cases = data.cases;
-                                      cases.forEach(caseData => {
-                                          const row = document.createElement('tr');
-                                          row.innerHTML = `
-                                              <td>${caseData._id}</td>
-                                              <td>${caseData.title}</td>
-                                              <td>${caseData.category.name}</td>
-                                              <td>${caseData.content}</td>
-                                              <td>${caseData.description}</td>
-                                              <td>${caseData.tag}</td>
-                                              <td>
-                                                  <button class="edit-btn">Edit</button>
-                                                  <button class="delete-btn">Delete</button>
-                                              </td>
-                                          `;
-                                          casesTbody.appendChild(row);
-                                      });
-                                  })
-                                  .catch(error => console.error(error));
-                          })
-                          .catch(error => console.error(error));
-                  };
-              })
-              .catch(error => console.error(error));
+        const caseId = e.target.parentNode.parentNode.children[0].textContent;
+        editingCaseId = caseId;
+        // Fetch case data and populate the form
+        fetch(`/case/${caseId}`)
+          .then(response => response.json())
+          .then(caseData => {
+            document.getElementById('primaryImage').value = caseData.primaryImage;
+            document.getElementById('images').value = caseData.images.join(',');
+            document.getElementById('title').value = caseData.title;
+            document.getElementById('category').value = caseData.category._id;
+            document.getElementById('content').value = caseData.content;
+            document.getElementById('description').value = caseData.description;
+            document.getElementById('tag').value = caseData.tag.join(',');
+            document.getElementById('videos').value = caseData.videos.join(',');
+            document.getElementById('submit-button').innerText = "Update Case";
+            caseModal.style.display = 'flex';
+          })
+          .catch(error => console.error(error));
       }
   });
 
   // Delete case
   casesTbody.addEventListener('click', (e) => {
-      if (e.target.classList.contains('delete-btn')) {
-          const caseId = e.target.parentNode.parentNode.children[0].textContent;
-          fetch(`/case/${caseId}`, {
-              method: 'DELETE',
-          })
-              .then(response => response.json())
-              .then(() => {
-                  // Refresh the cases table
-                  casesTbody.innerHTML = '';
-                  fetch('/cases')
-                      .then(response => response.json())
-                      .then(data => {
-                          const cases = data.cases;
-                          cases.forEach(caseData => {
-                              const row = document.createElement('tr');
-                              row.innerHTML = `
-                                  <td>${caseData._id}</td>
-                                  <td>${caseData.title}</td>
-                                  <td>${caseData.category.name}</td>
-                                  <td>
-                                      <button class="edit-btn">Edit</button>
-                                      <button class="delete-btn">Delete</button>
-                                  </td>
-                              `;
-                              casesTbody.appendChild(row);
-                          });
-                      })
-                      .catch(error => console.error(error));
-              })
-              .catch(error => console.error(error));
-      }
+    if (e.target.classList.contains('delete-btn')) {
+      const caseId = e.target.parentNode.parentNode.children[0].textContent;
+      fetch(`/case/${caseId}`, {
+          method: 'DELETE',
+      })
+      .then(response => response.json())
+      .then(() => {
+        // Refresh the cases table
+        casesTbody.innerHTML = '';
+        fetchCases();
+      })
+      .catch(error => console.error(error));
+    }
   });
 
   // View case details
-  // casesTbody.addEventListener('click', (e) => {
-  //     if (e.target.parentNode.parentNode.tagName === 'TR') {
-  //       const caseId = e.target.parentNode.parentNode.children[0].textContent;
-  //       window.location.href = `/case/${caseId}`;
-  //     }
-  // });
+  casesTbody.addEventListener('click', (e) => {
+      if (e.target.children[0].tagName === 'IMG') {
+        const caseId = e.target.parentNode.children[0].textContent;
+        window.location.href = `/case/${caseId}`;
+      }
+  });
 
   // Search cases
   const searchInput = document.getElementById('search-input');
@@ -444,10 +377,10 @@
     .then(response => response.json())
     .then(categories => {
         categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category._id;
-            option.textContent = category.name;
-            categoryFilter.appendChild(option);
+          const option = document.createElement('option');
+          option.value = category._id;
+          option.textContent = category.name;
+          categoryFilter.appendChild(option);
         });
     })
     .catch(error => console.error(error));
@@ -455,7 +388,6 @@
   categoryFilter.addEventListener('change', (e) => {
     const categoryId = e.target.value;
     if (categoryId === '') {
-      // If "All Categories" is selected, fetch all cases
       fetchCases();
       return;
     }
@@ -502,14 +434,14 @@
 
 
   // Show modal on button click
-  createCaseBtn.addEventListener('click', () => {
-    createCaseModal.style.display = 'flex';
+  caseBtn.addEventListener('click', () => {
+    caseModal.style.display = 'flex';
   });
 
   // Hide modal when clicking outside
   window.addEventListener('click', (e) => {
-    if (e.target === createCaseModal) {
-      createCaseModal.style.display = 'none';
+    if (e.target === caseModal) {
+      caseModal.style.display = 'none';
     }
   });
 

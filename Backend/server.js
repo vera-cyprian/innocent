@@ -376,7 +376,7 @@ app.post("/admin-login", limiter, async (req, res) => {
   res.status(200).json({ message: "Login Successful" });
 });
 
-// Admin Logout End point - Tested
+// Admin Logout End point - Connected
 app.post("/admin-logout", authenticate, (req, res) => {
   res.clearCookie("token", {
     httpOnly: true,
@@ -660,7 +660,7 @@ app.put("/category/:id", authenticate, checkPermission("update"), async (req, re
 
 // CASE CRUD OPERATION
 
-// Create case (admin only) - Tested
+// Create case (admin only) - Connected
 app.post("/case", authenticate, checkPermission("create"), async (req, res) => {
   try {
     await caseSchema.validateAsync(req.body);
@@ -703,7 +703,7 @@ app.get("/case", async (req, res) => {
   }
 });
 
-// View Case by ID (admin and user) - Tested
+// View Case by ID (admin and user) - Connected
 app.get("/case/:id", async (req, res) => {
   try {
     const caseId = req.params.id;
@@ -723,7 +723,7 @@ app.get("/case/:id", async (req, res) => {
   }
 });
 
-// Update Case (admin only) - Tested
+// Update Case (admin only) - Connected
 app.put("/case/:id", authenticate, checkPermission("update"), async (req, res) => {
   try {
     const caseId = req.params.id;
@@ -752,7 +752,7 @@ app.put("/case/:id", authenticate, checkPermission("update"), async (req, res) =
   }
 });
 
-// Delete Case (admin only) - Tested
+// Delete Case (admin only) - Connected
 app.delete("/case/:id", authenticate, checkPermission("delete"), async (req, res) => {
   try {
     const caseId = req.params.id;
@@ -853,7 +853,7 @@ app.get("/cases/filter", authenticate, checkPermission("view"), async (req, res)
 app.get("/cases", authenticate, checkPermission("view"), async (req, res) => {
   try {
     const page = req.query.page || 1;
-    const limit = 2;  // Should be 10
+    const limit = 5;  // Should be 10
 
     const cases = await Case.find()
       .populate("category")
