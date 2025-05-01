@@ -72,8 +72,13 @@ const checkPermission = (action) => {
         admin: ["create", "view", "update", "delete", "search"],
         user: ["view", "search"],
       };
-      if (!permissions[req.user.role] || !permissions[req.user.role].includes(action)) {
-        return res.status(401).json({ message: "You don't have the permission to perform this operation" });
+      if (
+        !permissions[req.user.role] ||
+        !permissions[req.user.role].includes(action)
+      ) {
+        return res.status(401).json({
+          message: "You don't have the permission to perform this operation",
+        });
       }
       next();
     } catch (error) {
@@ -97,7 +102,9 @@ app.get("/", (req, res) => {
 });
 app.get("/admin-dashboard", authenticate, (req, res) => {
   // Only authenticated admins can access this route
-  res.sendFile(path.join(__dirname, "../Frontend/views/admin/admin-dashboard.html"));
+  res.sendFile(
+    path.join(__dirname, "../Frontend/views/admin/admin-dashboard.html")
+  );
 });
 app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "../Frontend/views/admin/login.html"));
@@ -216,7 +223,7 @@ const categorySchema = Joi.object({
     "string.empty": "Category name is required",
     "any.required": "Category name is required",
   }),
-  description: Joi.string().allow('').optional().trim(),
+  description: Joi.string().allow("").optional().trim(),
 });
 
 const caseSchema = Joi.object({
@@ -227,9 +234,8 @@ const caseSchema = Joi.object({
   content: Joi.string().required(),
   description: Joi.string().required(),
   tag: Joi.array().items(Joi.string().required()).min(1).required(),
-  videos: Joi.array().items(Joi.string())
+  videos: Joi.array().items(Joi.string()),
 });
-
 
 // ADMIN AUTHENTICATION
 
@@ -303,12 +309,9 @@ app.post("/admin-register", limiter, async (req, res) => {
         console.log(error);
         admin.verificationFailed = true;
         await admin.save();
-        res
-          .status(500)
-          .json({
-            message:
-              "Error sending verification email. Please try again later.",
-          });
+        res.status(500).json({
+          message: "Error sending verification email. Please try again later.",
+        });
       } else {
         console.log("Email sent: " + info.response);
         res.status(200).json({
@@ -362,9 +365,13 @@ app.post("/admin-login", limiter, async (req, res) => {
     return res.status(400).json({ message: "Email not verified" });
   }
 
-  const token = jwt.sign({ adminId: admin._id, role: admin.role }, process.env.JWT_SECRET, {
-    expiresIn: "1h",
-  });
+  const token = jwt.sign(
+    { adminId: admin._id, role: admin.role },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "1h",
+    }
+  );
 
   res.cookie("token", token, {
     httpOnly: true,
@@ -541,7 +548,6 @@ app.post("/resend-verification", verifyTokenMiddleware, async (req, res) => {
   }
 });
 
-
 // ADMIN CRUD OPERATION
 
 // Delete All Admins from Database End point - Tested
@@ -566,97 +572,127 @@ app.get("/admins", async (req, res) => {
   }
 });
 
-
 // CATEGORY CRUD OPERATION
 
 // Create Category (admin only) - Tested
-app.post("/category", authenticate, checkPermission("create"), async (req, res) => {
-  try {
-    await categorySchema.validateAsync(req.body);
-  } catch (error) {
-    return res.status(400).json({ message: error.details[0].message });
-  }
-
-  const { name, description } = req.body;
-
-  // Check if category already exists
-  const existingCategory = await Category.findOne({ name });
-  if (existingCategory) {
-    return res.status(400).json({ message: "Category already exists" });
-  }
-
-  try {
-    const categoryData = { name };
-    if (description !== undefined && description.trim() !== '') {
-      categoryData.description = description;
+app.post(
+  "/category",
+  authenticate,
+  checkPermission("create"),
+  async (req, res) => {
+    try {
+      await categorySchema.validateAsync(req.body);
+    } catch (error) {
+      return res.status(400).json({ message: error.details[0].message });
     }
-    const category = new Category(categoryData);
-    await category.save();
-    res.status(201).json({ message: "Category created successfully" });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Error creating category" });
-  }
-});
 
-// Get Category (admin and user) - Connected
-app.get("/category", authenticate, checkPermission("view"), async (req, res) => {
-  try {
-    const categories = await Category.find();
-    res.status(200).json(categories);
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Error fetching categories" });
-  }
-});
-
-// Delete Category (admin only) - Tested
-app.delete("/category/:id", authenticate, checkPermission("delete"), async (req, res) => {
-  try {
-    const categoryId = req.params.id;
-    const category = await Category.findByIdAndDelete(categoryId);
-    if (!category) {
-      return res.status(404).json({ message: "Category not found" });
-    }
-    res.status(200).json({ message: "Category deleted successfully" });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Error deleting category" });
-  }
-});
-
-// Update Category (admin only) - Tested
-app.put("/category/:id", authenticate, checkPermission("update"), async (req, res) => {
-  try {
-    await categorySchema.validateAsync(req.body);
-  } catch (error) {
-    return res.status(400).json({ message: error.details[0].message });
-  }
-
-  try {
-    const categoryId = req.params.id;
     const { name, description } = req.body;
 
-    // Check if category name already exists
-    const existingCategory = await Category.findOne({ name, _id: { $ne: categoryId } });
+    // Check if category already exists
+    const existingCategory = await Category.findOne({ name });
     if (existingCategory) {
-      return res.status(400).json({ message: "Category name already exists" });
+      return res.status(400).json({ message: "Category already exists" });
     }
 
-    const updateData = { name };
-    updateData.description = description.trim() === '' ? 'No Description' : description;
-
-    const category = await Category.findByIdAndUpdate(categoryId, updateData, { new: true });
-    if (!category) {
-      return res.status(404).json({ message: "Category not found" });
+    try {
+      const categoryData = { name };
+      if (description !== undefined && description.trim() !== "") {
+        categoryData.description = description;
+      }
+      const category = new Category(categoryData);
+      await category.save();
+      res.status(201).json({ message: "Category created successfully" });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Error creating category" });
     }
-    res.status(200).json({ message: "Category updated successfully", category });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Error updating category" });
   }
-});
+);
 
+// Get Category (admin and user) - Connected
+app.get(
+  "/category",
+  authenticate,
+  checkPermission("view"),
+  async (req, res) => {
+    try {
+      const categories = await Category.find();
+      res.status(200).json(categories);
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Error fetching categories" });
+    }
+  }
+);
+
+// Delete Category (admin only) - Tested
+app.delete(
+  "/category/:id",
+  authenticate,
+  checkPermission("delete"),
+  async (req, res) => {
+    try {
+      const categoryId = req.params.id;
+      const category = await Category.findByIdAndDelete(categoryId);
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      res.status(200).json({ message: "Category deleted successfully" });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Error deleting category" });
+    }
+  }
+);
+
+// Update Category (admin only) - Tested
+app.put(
+  "/category/:id",
+  authenticate,
+  checkPermission("update"),
+  async (req, res) => {
+    try {
+      await categorySchema.validateAsync(req.body);
+    } catch (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+
+    try {
+      const categoryId = req.params.id;
+      const { name, description } = req.body;
+
+      // Check if category name already exists
+      const existingCategory = await Category.findOne({
+        name,
+        _id: { $ne: categoryId },
+      });
+      if (existingCategory) {
+        return res
+          .status(400)
+          .json({ message: "Category name already exists" });
+      }
+
+      const updateData = { name };
+      updateData.description =
+        description.trim() === "" ? "No Description" : description;
+
+      const category = await Category.findByIdAndUpdate(
+        categoryId,
+        updateData,
+        { new: true }
+      );
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      res
+        .status(200)
+        .json({ message: "Category updated successfully", category });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Error updating category" });
+    }
+  }
+);
 
 // CASE CRUD OPERATION
 
@@ -685,7 +721,7 @@ app.post("/case", authenticate, checkPermission("create"), async (req, res) => {
     res.status(201).json({ message: "Case created successfully" });
   } catch (error) {
     console.log(error);
-    if (error.name === 'ValidationError') {
+    if (error.name === "ValidationError") {
       return res.status(400).json({ message: error.message });
     }
     res.status(500).json({ message: "Error creating case" });
@@ -695,7 +731,7 @@ app.post("/case", authenticate, checkPermission("create"), async (req, res) => {
 // View All Cases (admin and user) - Connected
 app.get("/case", async (req, res) => {
   try {
-    const cases = await Case.find().populate('category');
+    const cases = await Case.find().populate("category");
     res.status(200).json(cases);
   } catch (error) {
     console.log(error);
@@ -711,7 +747,7 @@ app.get("/case/:id", async (req, res) => {
       return res.status(400).json({ message: "Invalid case ID" });
     }
 
-    const caseData = await Case.findById(caseId).populate('category');
+    const caseData = await Case.findById(caseId).populate("category");
     if (!caseData) {
       return res.status(404).json({ message: "Case not found" });
     }
@@ -724,136 +760,159 @@ app.get("/case/:id", async (req, res) => {
 });
 
 // Update Case (admin only) - Connected
-app.put("/case/:id", authenticate, checkPermission("update"), async (req, res) => {
-  try {
-    const caseId = req.params.id;
-    if (!mongoose.Types.ObjectId.isValid(caseId)) {
-      return res.status(400).json({ message: "Invalid case ID" });
-    }
-    const categoryId = req.body.category;
-    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
-      return res.status(400).json({ message: "Invalid category ID" });
-    }
+app.put(
+  "/case/:id",
+  authenticate,
+  checkPermission("update"),
+  async (req, res) => {
+    try {
+      const caseId = req.params.id;
+      if (!mongoose.Types.ObjectId.isValid(caseId)) {
+        return res.status(400).json({ message: "Invalid case ID" });
+      }
+      const categoryId = req.body.category;
+      if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+        return res.status(400).json({ message: "Invalid category ID" });
+      }
 
-    const category = await Category.findById(categoryId);
-    if (!category) {
-      return res.status(400).json({ message: "Category not found" });
+      const category = await Category.findById(categoryId);
+      if (!category) {
+        return res.status(400).json({ message: "Category not found" });
+      }
+
+      delete req.body.postedBy; // Delete postedBy field from request body
+      const caseData = await Case.findByIdAndUpdate(caseId, req.body, {
+        new: true,
+      });
+      if (!caseData) {
+        return res.status(404).json({ message: "Case not found" });
+      }
+      res.status(200).json({ message: "Case updated successfully", caseData });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Error updating case" });
     }
-    
-    delete req.body.postedBy; // Delete postedBy field from request body
-    const caseData = await Case.findByIdAndUpdate(caseId, req.body, { new: true });
-    if (!caseData) {
-      return res.status(404).json({ message: "Case not found" });
-    }
-    res.status(200).json({ message: "Case updated successfully", caseData });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Error updating case" });
   }
-});
+);
 
 // Delete Case (admin only) - Connected
-app.delete("/case/:id", authenticate, checkPermission("delete"), async (req, res) => {
-  try {
-    const caseId = req.params.id;
-    if (!mongoose.Types.ObjectId.isValid(caseId)) {
-      return res.status(400).json({ message: "Invalid case ID" });
-    }
+app.delete(
+  "/case/:id",
+  authenticate,
+  checkPermission("delete"),
+  async (req, res) => {
+    try {
+      const caseId = req.params.id;
+      if (!mongoose.Types.ObjectId.isValid(caseId)) {
+        return res.status(400).json({ message: "Invalid case ID" });
+      }
 
-    const caseDoc = await Case.findByIdAndDelete(caseId);
-    if (!caseDoc) {
-      return res.status(404).json({ message: "Case not found" });
-    }
+      const caseDoc = await Case.findByIdAndDelete(caseId);
+      if (!caseDoc) {
+        return res.status(404).json({ message: "Case not found" });
+      }
 
-    res.status(200).json({ message: "Case deleted successfully" });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Error deleting case" });
+      res.status(200).json({ message: "Case deleted successfully" });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Error deleting case" });
+    }
   }
-});
-
+);
 
 // SEARCH FUNCTIONALITY
 
 // Search Cases (admin and user) - Connected
-app.get("/search/cases", authenticate, checkPermission("search"), async (req, res) => {
-  try {
-    const query = req.query.q;
-    const page = 1;
-    const limit = 10;
-    if (!query) {
-      return res.status(400).json({ message: "Search query is required" });
-    }
+app.get(
+  "/search/cases",
+  authenticate,
+  checkPermission("search"),
+  async (req, res) => {
+    try {
+      const query = req.query.q;
+      const page = 1;
+      const limit = 10;
+      if (!query) {
+        return res.status(400).json({ message: "Search query is required" });
+      }
 
-    const regex = new RegExp(query, "i");
-    const cases = await Case.find({
-      $or: [
-        { title: regex },
-        { description: regex },
-        { content: regex },
-        { tag: regex },
-      ],
-    }).populate("category") 
-      .skip((page - 1) * limit)
-      .limit(limit);
+      const regex = new RegExp(query, "i");
+      const cases = await Case.find({
+        $or: [
+          { title: regex },
+          { description: regex },
+          { content: regex },
+          { tag: regex },
+        ],
+      })
+        .populate("category")
+        .skip((page - 1) * limit)
+        .limit(limit);
       const totalCases = await Case.countDocuments({
         $or: [
-            { title: regex },
-            { description: regex },
-            { content: regex },
-            { tag: regex },
+          { title: regex },
+          { description: regex },
+          { content: regex },
+          { tag: regex },
         ],
-    });
-    const totalPages = Math.ceil(totalCases / limit);
-    res.status(200).json({
+      });
+      const totalPages = Math.ceil(totalCases / limit);
+      res.status(200).json({
         cases,
         pagination: {
-            currentPage: page,
-            totalPages,
-            totalCases,
-        },
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Error searching cases" });
-  }
-});
-
-// Filter Cases by Category (admin and user) - Connected
-app.get("/cases/filter", authenticate, checkPermission("view"), async (req, res) => {
-  try {
-    const categoryId = req.query.category;
-    const page = 1;
-    const limit = 10;
-    if (!categoryId) {
-      return res.status(400).json({ message: "Category ID is required" });
-    }
-
-    const cases = await Case.find({ category: categoryId }).populate("category")
-      .populate("category")
-      .skip((page - 1) * limit)
-      .limit(limit);
-    const totalCases = await Case.countDocuments({ category: categoryId });
-    const totalPages = Math.ceil(totalCases / limit);
-    res.status(200).json({
-      cases,
-      pagination: {
           currentPage: page,
           totalPages,
           totalCases,
-      },
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({ message: "Error filtering cases" });
+        },
+      });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Error searching cases" });
+    }
   }
-});
+);
+
+// Filter Cases by Category (admin and user) - Connected
+app.get(
+  "/cases/filter",
+  authenticate,
+  checkPermission("view"),
+  async (req, res) => {
+    try {
+      const categoryId = req.query.category;
+      const page = 1;
+      const limit = 10;
+      if (!categoryId) {
+        return res.status(400).json({ message: "Category ID is required" });
+      }
+
+      const cases = await Case.find({ category: categoryId })
+        .populate("category")
+        .populate("category")
+        .skip((page - 1) * limit)
+        .limit(limit);
+      const totalCases = await Case.countDocuments({ category: categoryId });
+      const totalPages = Math.ceil(totalCases / limit);
+      res.status(200).json({
+        cases,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalCases,
+        },
+      });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ message: "Error filtering cases" });
+    }
+  }
+);
 
 // Paginate Cases (admin and user) - Connected
 app.get("/cases", authenticate, checkPermission("view"), async (req, res) => {
   try {
     const page = req.query.page || 1;
-    const limit = 5;  // Should be 10
+    const limit = 5; // Should be 10
 
     const cases = await Case.find()
       .populate("category")
@@ -876,7 +935,6 @@ app.get("/cases", authenticate, checkPermission("view"), async (req, res) => {
     res.status(500).json({ message: "Error fetching cases" });
   }
 });
-
 
 // COMMENT AND REPLY FUNCTIONALITY
 
@@ -915,13 +973,15 @@ app.get("/cases/:caseId/comments", async (req, res) => {
   try {
     const caseId = req.params.caseId;
 
-    const comments = await Comment.find({ caseId, parentCommentId: null })
-      .populate({
+    const comments = await Comment.find({
+      caseId,
+      parentCommentId: null,
+    }).populate({
+      path: "replies",
+      populate: {
         path: "replies",
-        populate: {
-          path: "replies",
-        },
-      });
+      },
+    });
 
     res.status(200).json(comments);
   } catch (error) {
