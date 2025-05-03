@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Case Details</title>
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+    <div id="case-details-container"></div>
+    <div id="comments-container"></div>
+    <form id="comment-form">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username"><br><br>
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email"><br><br>
+        <label for="comment">Comment:</label>
+        <textarea id="comment" name="comment"></textarea><br><br>
+        <button id="submit-comment-btn">Submit Comment</button>
+    </form>
+    <script>
+        
+const caseDetailsContainer = document.getElementById('case-details-container');
+const commentsContainer = document.getElementById('comments-container');
+const commentForm = document.getElementById('comment-form');
+const submitCommentBtn = document.getElementById('submit-comment-btn');
+
+const urlParams = new URLSearchParams(window.location.search);
+const caseId = urlParams.get('id') || window.location.pathname.split('/').pop();
+
+// Function to get case details
+async function getCaseDetails() {
+    try {
+        const response = await fetch(`/case/${caseId}`, {
+            credentials: 'include',
+        });
+        const caseData = await response.json();
+        renderCaseDetails(caseData);
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+// Function to render case details
+function renderCaseDetails(caseData) {
+    caseDetailsContainer.innerHTML = `
+        <h1>${caseData.title}</h1>
+        <p>Category: ${caseData.category.name}</p>
+        <p>Description: ${caseData.description}</p>
+    `;
+}
+
+// Function to get comments
+async function getComments() {
+    try {
+        const response = await fetch(`/cases/${caseId}/comments`, {
+            credentials: 'include',
+        });
+        const comments = await response.json();
+        renderComments(comments);
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+// Function to render comments
+function renderComments(comments) {
+    commentsContainer.innerHTML = '';
+    comments.forEach((comment) => {
+        const commentHtml = `
+            <div>
+                <p>${comment.username}: ${comment.comment}</p>
+                <button onclick="replyToComment('${comment._id}')">Reply</button>
+                ${comment.replies.map((reply) => `
+                    <div style="margin-left: 20px;">
+                        <p>${reply.username}: ${reply.comment}</p>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        commentsContainer.insertAdjacentHTML('beforeend', commentHtml);
+    });
+}
+
+// Function to create comment
+async function createComment(commentData) {
+    try {
+        const response = await fetch(`/cases/${caseId}/comments`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(commentData),
+            credentials: 'include',
+        });
+        const newComment = await response.json();
+        getComments();
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+// Event listener for submit comment button
+submitCommentBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const username = document.getElementById('username').value;
+    const email = document.getElementById('email').value;
+    const comment = document.getElementById('comment').value;
+    const commentData = { username, email, comment };
+    createComment(commentData);
+});
+
+// Function to reply to comment
+function replyToComment(parentCommentId) {
+    const comment = prompt('Enter your reply:');
+    const username = prompt('Enter your username:');
+    const email = prompt('Enter your email:');
+    const commentData = { username, email, comment, parentCommentId };
+    createComment(commentData);
+}
+
+getCaseDetails();
+getComments();
+
+
+    </script>
+</body>
+</html>
+

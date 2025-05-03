@@ -157,6 +157,11 @@ app.get("/user", (req, res) => {
     path.join(__dirname, "../Frontend/views/user/index.html")
   );
 });
+app.get("/cases/:id", (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../Frontend/views/user/case-details.html")
+  );
+});
 
 // Rate limiting
 const limiter = rateLimit({

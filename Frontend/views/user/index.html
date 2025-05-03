@@ -212,7 +212,7 @@
     casesTbody.addEventListener('click', (e) => {
       if (e.target.children[0].tagName === 'IMG') {
         const caseId = e.target.parentNode.children[0].textContent;
-        window.location.href = `/case/${caseId}`;
+        window.location.href = `/cases/${caseId}`;
       }
     });
 
@@ -320,13 +320,6 @@
           document.getElementById('next-page-btn').disabled = pagination.currentPage === pagination.totalPages;
         })
         .catch(error => console.error(error));
-    });
-
-    // Hide modal when clicking outside
-    window.addEventListener('click', (e) => {
-      if (e.target === caseModal) {
-        caseModal.style.display = 'none';
-      }
     });
 
   </script>
