@@ -319,7 +319,7 @@
     casesTbody.addEventListener('click', (e) => {
       if (e.target.children[0].tagName === 'IMG') {
         const caseId = e.target.parentNode.children[0].textContent;
-        window.location.href = `/case/${caseId}`;
+        window.location.href = `/admin/cases/${caseId}`;
       }
     });
 

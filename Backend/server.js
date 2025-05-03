@@ -162,6 +162,11 @@ app.get("/cases/:id", (req, res) => {
     path.join(__dirname, "../Frontend/views/user/case-details.html")
   );
 });
+app.get("/admin/cases/:id", (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../Frontend/views/admin/case-details.html")
+  );
+});
 
 // Rate limiting
 const limiter = rateLimit({
@@ -948,7 +953,7 @@ app.get("/cases", authenticate, checkPermission("view"), async (req, res) => {
 
 // COMMENT AND REPLY FUNCTIONALITY
 
-// Create Comment or Reply (only user) - Tested
+// Create Comment or Reply (only user) - Connected
 app.post("/cases/:caseId/comments", async (req, res) => {
   try {
     const caseId = req.params.caseId;
@@ -978,7 +983,7 @@ app.post("/cases/:caseId/comments", async (req, res) => {
   }
 });
 
-// Get Comment or Reply (only user) - Tested
+// Get Comment or Reply (only user) - Connected
 app.get("/cases/:caseId/comments", async (req, res) => {
   try {
     const caseId = req.params.caseId;
