@@ -343,8 +343,12 @@
             const row = document.createElement('tr');
             row.innerHTML = `
                       <td>${caseData._id}</td>
+                      <td><img src="${caseData.primaryImage}"/></td>
                       <td>${caseData.title}</td>
                       <td>${caseData.category.name}</td>
+                      <td>${caseData.content}</td>
+                      <td>${caseData.description}</td>
+                      <td>${caseData.tag}</td>
                       <td>
                           <button class="edit-btn">Edit</button>
                           <button class="delete-btn">Delete</button>
@@ -401,6 +405,7 @@
             const row = document.createElement('tr');
             row.innerHTML = `
                     <td>${caseData._id}</td>
+                    <td><img src="${caseData.primaryImage}"/></td>
                     <td>${caseData.title}</td>
                     <td>${caseData.category.name}</td>
                     <td>${caseData.content}</td>

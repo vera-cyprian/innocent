@@ -1,37 +1,335 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-  <title>Justice Njaka - Home</title>
-  <link rel="stylesheet" href="css/user.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="/css/admin.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+    header {
+      background-color: #333;
+      color: #fff;
+      padding: 1em;
+      text-align: center;
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2em;
+    }
+
+    #cases-section {
+      background-color: #f7f7f7;
+      padding: 1em;
+      border: 1px solid #ddd;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    #cases-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    #cases-table th,
+    #cases-table td {
+      border: 1px solid #ddd;
+      padding: 0.5em;
+      text-align: left;
+    }
+
+    #cases-table th {
+      background-color: #f0f0f0;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background-color: #fff;
+      padding: 2em;
+      border: 1px solid #ddd;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      width: 300px;
+    }
+  </style>
 </head>
+
 <body>
   <header>
-    <h1 onclick="window.location.href='index.html'">Justice Njaka</h1>
-    <nav>
-      <a href="about.html">About</a>
-      <a href="contact.html">Contact</a>
-    </nav>
-  </header>
-
-  <div class="container">
-    <select id="categorySelect">
-      <option value="All">All Categories</option>
-      <option value="Criminal">Criminal</option>
-      <option value="Civil">Civil</option>
-      <option value="Family">Family</option>
-      <option value="Business">Business</option>
+    <h1>User Dashboard</h1>
+    <input id="search-input" type="search" placeholder="Search for cases here">
+    <select id="category-filter">
+      <option value="">All Categories</option>
     </select>
-
-    <div id="caseGrid" class="case-grid"></div>
+  </header>
+  <main>
+    <section id="cases-section">
+      <h2>Cases</h2>
+      <table id="cases-table">
+        <thead>
+          <tr>
+            <th>Case ID</th>
+            <th>Primary Image</th>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Actions</th>
+            <th>Description</th>
+            <th>Tag</th>
+          </tr>
+        </thead>
+        <tbody id="cases-tbody">
+          <!-- Cases will be rendered here -->
+        </tbody>
+      </table>
+    </section>
+  </main>
+  <div id="create-case-modal" class="modal">
+    <form id="create-case-form" class="modal-content">
+      <label for="primaryImage">Primary Image:</label>
+      <input type="text" id="primaryImage" name="primaryImage"><br><br>
+      <label for="images">Images:</label>
+      <input type="text" id="images" name="images"><br><br>
+      <label for="title">Title:</label>
+      <input type="text" id="title" name="title"><br><br>
+      <label for="category">Category:</label>
+      <select id="category" name="category">
+        <!-- Options will be rendered here -->
+      </select><br><br>
+      <label for="content">Content:</label>
+      <textarea id="content" name="content"></textarea><br><br>
+      <label for="description">Description:</label>
+      <textarea id="description" name="description"></textarea><br><br>
+      <label for="tag">Tag:</label>
+      <input type="text" id="tag" name="tag"><br><br>
+      <label for="videos">Videos:</label>
+      <input type="text" id="videos" name="videos"><br><br>
+      <button id="submit-button" type="submit">Create Case</button>
+    </form>
   </div>
 
-  <footer>
-    <h3>Subscribe to our Newsletter</h3>
-    <input type="email" placeholder="Enter your email" />
-    <button>Subscribe</button>
-    <p>&copy; 2025 Justice Njaka</p>
-  </footer>
 
-  <script src="js/main.js"></script>
+  <script>
+    const casesTable = document.getElementById('cases-table');
+    const casesTbody = document.getElementById('cases-tbody');
+
+    // Function to fetch cases for a specific page
+    function fetchCases(page = 1) {
+      fetch(`/cases?page=${page}`)
+        .then(response => response.json())
+        .then(data => {
+          const cases = data.cases;
+          const pagination = data.pagination;
+          casesTbody.innerHTML = '';
+          console.log(cases)
+          cases.forEach(caseData => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                  <td>${caseData._id}</td>
+                  <td><img src="${caseData.primaryImage}"/></td>
+                  <td>${caseData.title}</td>
+                  <td>${caseData.category.name}</td>
+                  <td>${caseData.content}</td>
+                  <td>${caseData.description}</td>
+                  <td>${caseData.tag}</td>
+              `;
+            casesTbody.appendChild(row);
+          });
+          // Update pagination information
+          const paginationInfo = document.querySelector('#cases-section p');
+          if (paginationInfo) {
+            paginationInfo.textContent = `Page ${pagination.currentPage} of ${pagination.totalPages} (${pagination.totalCases} cases)`;
+          } else {
+            const paginationInfo = document.createElement('p');
+            paginationInfo.textContent = `Page ${pagination.currentPage} of ${pagination.totalPages} (${pagination.totalCases} cases)`;
+            document.getElementById('cases-section').appendChild(paginationInfo);
+          }
+
+          // Disable previous button if on first page
+          document.getElementById('prev-page-btn').disabled = pagination.currentPage === 1;
+
+          // Disable next button if on last page
+          document.getElementById('next-page-btn').disabled = pagination.currentPage === pagination.totalPages;
+        })
+        .catch(error => console.error(error));
+    }
+
+    // Fetch cases for the first page
+    fetchCases();
+
+    // Create pagination buttons
+    const paginationButtons = document.createElement('div');
+    paginationButtons.innerHTML = `
+    <button id="prev-page-btn">Previous</button>
+    <button id="next-page-btn">Next</button>
+  `;
+    document.getElementById('cases-section').appendChild(paginationButtons);
+
+    // Add event listeners to pagination buttons
+    document.getElementById('prev-page-btn').addEventListener('click', () => {
+      const currentPage = parseInt(document.querySelector('#cases-section p').textContent.split(' ')[1]);
+      fetchCases(currentPage - 1);
+    });
+
+    document.getElementById('next-page-btn').addEventListener('click', () => {
+      const currentPage = parseInt(document.querySelector('#cases-section p').textContent.split(' ')[1]);
+      fetchCases(currentPage + 1);
+    });
+
+    // Fetch categories from API and render them in the select options
+    fetch('/category')
+      .then(response => response.json())
+      .then(categories => {
+        const categorySelect = document.getElementById('category');
+        categories.forEach(category => {
+          const option = document.createElement('option');
+          option.value = category._id;
+          option.textContent = category.name;
+          categorySelect.appendChild(option);
+        });
+      })
+      .catch(error => console.error(error));
+
+
+    let editingCaseId = null;
+
+    // View case details
+    casesTbody.addEventListener('click', (e) => {
+      if (e.target.children[0].tagName === 'IMG') {
+        const caseId = e.target.parentNode.children[0].textContent;
+        window.location.href = `/case/${caseId}`;
+      }
+    });
+
+    // Search cases
+    const searchInput = document.getElementById('search-input');
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.trim();
+      if (query === '') {
+        // If the search query is empty, fetch all cases
+        fetchCases();
+        return;
+      }
+      fetch(`/search/cases?q=${query}`)
+        .then(response => response.json())
+        .then(data => {
+          const cases = data.cases;
+          const pagination = data.pagination;
+          casesTbody.innerHTML = '';
+          console.log(cases)
+          cases.forEach(caseData => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                      <td>${caseData._id}</td>
+                      <td><img src="${caseData.primaryImage}"/></td>
+                      <td>${caseData.title}</td>
+                      <td>${caseData.category.name}</td>
+                      <td>${caseData.content}</td>
+                      <td>${caseData.description}</td>
+                      <td>${caseData.tag}</td>
+                  `;
+            casesTbody.appendChild(row);
+          });
+          // Update pagination information
+          const paginationInfo = document.querySelector('#cases-section p');
+          if (paginationInfo) {
+            paginationInfo.textContent = `Page ${pagination.currentPage} of ${pagination.totalPages} (${pagination.totalCases} cases)`;
+          } else {
+            const paginationInfo = document.createElement('p');
+            paginationInfo.textContent = `Page ${pagination.currentPage} of ${pagination.totalPages} (${pagination.totalCases} cases)`;
+            document.getElementById('cases-section').appendChild(paginationInfo);
+          }
+
+          // Disable previous button if on first page
+          document.getElementById('prev-page-btn').disabled = pagination.currentPage === 1;
+
+          // Disable next button if on last page
+          document.getElementById('next-page-btn').disabled = pagination.currentPage === pagination.totalPages;
+        })
+        .catch(error => console.error(error));
+    });
+
+    // Filter cases by category
+    const categoryFilter = document.getElementById('category-filter');
+    fetch('/category')
+      .then(response => response.json())
+      .then(categories => {
+        categories.forEach(category => {
+          const option = document.createElement('option');
+          option.value = category._id;
+          option.textContent = category.name;
+          categoryFilter.appendChild(option);
+        });
+      })
+      .catch(error => console.error(error));
+
+    categoryFilter.addEventListener('change', (e) => {
+      const categoryId = e.target.value;
+      if (categoryId === '') {
+        fetchCases();
+        return;
+      }
+      fetch(`/cases/filter?category=${categoryId}`)
+        .then(response => response.json())
+        .then(data => {
+          const cases = data.cases;
+          const pagination = data.pagination;
+          casesTbody.innerHTML = '';
+          cases.forEach(caseData => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                    <td>${caseData._id}</td>
+                    <td><img src="${caseData.primaryImage}"/></td>
+                    <td>${caseData.title}</td>
+                    <td>${caseData.category.name}</td>
+                    <td>${caseData.content}</td>
+                    <td>${caseData.description}</td>
+                    <td>${caseData.tag}</td>
+                `;
+            casesTbody.appendChild(row);
+          });
+          // Update pagination information
+          const paginationInfo = document.querySelector('#cases-section p');
+          if (paginationInfo) {
+            paginationInfo.textContent = `Page ${pagination.currentPage} of ${pagination.totalPages} (${pagination.totalCases} cases)`;
+          } else {
+            const paginationInfo = document.createElement('p');
+            paginationInfo.textContent = `Page ${pagination.currentPage} of ${pagination.totalPages} (${pagination.totalCases} cases)`;
+            document.getElementById('cases-section').appendChild(paginationInfo);
+          }
+
+          // Disable previous button if on first page
+          document.getElementById('prev-page-btn').disabled = pagination.currentPage === 1;
+
+          // Disable next button if on last page
+          document.getElementById('next-page-btn').disabled = pagination.currentPage === pagination.totalPages;
+        })
+        .catch(error => console.error(error));
+    });
+
+    // Hide modal when clicking outside
+    window.addEventListener('click', (e) => {
+      if (e.target === caseModal) {
+        caseModal.style.display = 'none';
+      }
+    });
+
+  </script>
 </body>
+
 </html>
