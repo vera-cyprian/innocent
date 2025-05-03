@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Category Management</title>
+    <link rel="stylesheet" href="/css/admin.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        #categories-container {
+            margin-top: 20px;
+        }
+
+        .category-item {
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .category-item button {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Category Management</h1>
+    <form id="category-form">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name"><br><br>
+        <label for="description">Description:</label>
+        <textarea id="description" name="description"></textarea><br><br>
+        <button id="create-btn">Create Category</button>
+        <button id="update-btn" style="display: none;">Update Category</button>
+    </form>
+    <div id="categories-container"></div>
+
+    <script>
+
+        const categoryForm = document.getElementById('category-form');
+        const createBtn = document.getElementById('create-btn');
+        const updateBtn = document.getElementById('update-btn');
+        const categoriesContainer = document.getElementById('categories-container');
+
+        let currentCategoryId = null;
+
+        // Function to get categories
+        async function getCategories() {
+            try {
+                const response = await fetch('/category', {
+                    credentials: 'include',
+                });
+                const categories = await response.json();
+                console.log(categories)
+                renderCategories(categories);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        // Function to create category
+        async function createCategory(categoryData) {
+            try {
+                const response = await fetch('/category', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(categoryData),
+                    credentials: 'include',
+                });
+                const data = await response.json();
+                if (data.message === 'Category created successfully') {
+                    alert("Category created successfully")
+                    getCategories();
+                    categoryForm.reset();
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+
+        // Function to update category
+        async function updateCategory(categoryId, categoryData) {
+            try {
+                const response = await fetch(`/category/${categoryId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(categoryData),
+                    credentials: 'include',
+                });
+                const data = await response.json();
+                if (data.message === 'Category updated successfully') {
+                    alert("Category updated successfully")
+                    getCategories();
+                    categoryForm.reset();
+                    createBtn.style.display = 'block';
+                    updateBtn.style.display = 'none';
+                    currentCategoryId = null;
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        // Function to delete category
+        async function deleteCategory(categoryId) {
+            try {
+                const response = await fetch(`/category/${categoryId}`, {
+                    method: 'DELETE',
+                    credentials: 'include',
+                });
+                const data = await response.json();
+                if (data.message === 'Category deleted successfully') {
+                    alert("Category deleted successfully")
+                    getCategories();
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+
+
+        // Function to render categories
+        function renderCategories(categories) {
+            categoriesContainer.innerHTML = '';
+            categories.forEach((category) => {
+                const categoryItem = document.createElement('div');
+                categoryItem.classList.add('category-item');
+                categoryItem.innerHTML = `
+                    ${category.name} - ${category.description}
+                    <button onclick="editCategory('${category._id}', '${category.name}', '${category.description}')">Edit</button>
+                    <button onclick="deleteCategory('${category._id}')">Delete</button>
+                `;
+                categoriesContainer.appendChild(categoryItem);
+            });
+        }
+
+
+
+        // Function to edit category
+        function editCategory(categoryId, name, description) {
+            document.getElementById('name').value = name;
+            document.getElementById('description').value = description;
+            createBtn.style.display = 'none';
+            updateBtn.style.display = 'block';
+            currentCategoryId = categoryId;
+        }
+
+        // Event listener for create button
+        createBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const description = document.getElementById('description').value;
+            const categoryData = { name, description };
+            createCategory(categoryData);
+        });
+
+        // Event listener for update button
+        updateBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const description = document.getElementById('description').value;
+            const categoryData = { name, description };
+            updateCategory(currentCategoryId, categoryData);
+        });
+
+        // Get categories on page load
+        getCategories();
+
+    </script>
+</body>
+
+</html>

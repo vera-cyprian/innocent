@@ -8,7 +8,7 @@ const categorySchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    default: "No description"
+    default: "No Description"
   }
 }, {
   timestamps: true

@@ -142,11 +142,11 @@ app.get("/reset-password/:token", (req, res) => {
     path.join(__dirname, "../Frontend/views/admin/reset-password.html")
   );
 });
-// app.get("/case-viewer", authenticate, (req, res) => {
-//   res.sendFile(
-//     path.join(__dirname, "../Frontend/views/admin/case-viewer.html")
-//   );
-// });
+app.get("/add-category", (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "../Frontend/views/admin/add-category.html")
+  );
+});
 app.get("/case-viewer", (req, res) => {
   res.sendFile(
     path.join(__dirname, "../Frontend/views/admin/case-viewer.html")
@@ -574,7 +574,7 @@ app.get("/admins", async (req, res) => {
 
 // CATEGORY CRUD OPERATION
 
-// Create Category (admin only) - Tested
+// Create Category (admin only) - Connected
 app.post(
   "/category",
   authenticate,
@@ -625,7 +625,7 @@ app.get(
   }
 );
 
-// Delete Category (admin only) - Tested
+// Delete Category (admin only) - Connected
 app.delete(
   "/category/:id",
   authenticate,
@@ -645,7 +645,7 @@ app.delete(
   }
 );
 
-// Update Category (admin only) - Tested
+// Update Category (admin only) - Connected
 app.put(
   "/category/:id",
   authenticate,
